@@ -1,0 +1,46 @@
+Metadata-Version: 2.4
+Name: shipyard
+Version: 0.1.0
+Summary: Minimal local Builder-Verifier orchestration system.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+
+# Shipyard
+
+Shipyard 是一个本地可运行的最小 Builder-Verifier 编排系统。第一版使用 `docs/TASKS.md` 作为任务源，使用 `.shipyard/` 持久化状态与 artifact，并通过 mock builder / mock verifier 跑通完整状态机闭环。
+
+## 本地运行
+
+要求：
+
+- Python 3.11
+
+安装：
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+```
+
+常用命令：
+
+```bash
+python -m shipyard.main status
+python -m shipyard.main step
+python -m shipyard.main run
+python -m shipyard.main reset
+python -m pytest
+```
+
+运行说明：
+
+- 任务源来自 `docs/TASKS.md`
+- 运行状态保存在 `.shipyard/state.json`
+- Builder artifact 保存在 `.shipyard/artifacts/builder/`
+- Verifier artifact 保存在 `.shipyard/artifacts/verifier/`
+- `run` 会持续执行直到 `COMPLETED` 或 `ABORTED`
+- `step` 只推进一步状态机，便于调试和续跑
+- `reset` 会清空 `.shipyard/state.json`、`.shipyard/run.log` 和 `.shipyard/artifacts/`
