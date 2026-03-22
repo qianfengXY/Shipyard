@@ -32,6 +32,18 @@ class HandoffService:
     def load_verifier_result(self, task_id: str) -> dict | None:
         return self._load_json(self.paths.verifier_artifacts_dir / f"{task_id}-review.json")
 
+    def save_task_record(self, task_id: str, payload: dict) -> tuple[Path, str]:
+        return self._save_json(self.paths.task_record_file(task_id), payload)
+
+    def load_task_record(self, task_id: str) -> dict | None:
+        return self._load_json(self.paths.task_record_file(task_id))
+
+    def save_failed_tasks(self, payload: dict) -> tuple[Path, str]:
+        return self._save_json(self.paths.failed_tasks_file, payload)
+
+    def load_failed_tasks(self) -> dict | None:
+        return self._load_json(self.paths.failed_tasks_file)
+
     def _save_json(self, path: Path, payload: dict) -> tuple[Path, str]:
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(

@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     prompt = Path(config["prompt_file"]).read_text(encoding="utf-8")
     status_file = Path(config["status_file"])
     result_file = Path(config["result_file"])
+    pid_file = Path(config["pid_file"])
 
     master_fd, slave_fd = pty.openpty()
     _copy_window_size(sys.stdin.fileno(), slave_fd)
@@ -43,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         start_new_session=True,
     )
     os.close(slave_fd)
+    pid_file.write_text(str(process.pid), encoding="utf-8")
 
     result_seen = False
     trusted_workspace_confirmed = False
@@ -84,6 +86,10 @@ def main(argv: list[str] | None = None) -> int:
                 status_file.write_text(str(return_code), encoding="utf-8")
                 return return_code
     finally:
+        try:
+            pid_file.unlink()
+        except FileNotFoundError:
+            pass
         try:
             os.close(master_fd)
         except OSError:

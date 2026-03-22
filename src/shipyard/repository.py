@@ -39,6 +39,18 @@ class RepositoryPaths:
         return self.shipyard_dir / "config.json"
 
     @property
+    def control_file(self) -> Path:
+        return self.shipyard_dir / "control.json"
+
+    @property
+    def run_pid_file(self) -> Path:
+        return self.shipyard_dir / "run.pid"
+
+    @property
+    def active_agent_file(self) -> Path:
+        return self.shipyard_dir / "active_agent.json"
+
+    @property
     def state_file(self) -> Path:
         return self.shipyard_dir / "state.json"
 
@@ -59,6 +71,14 @@ class RepositoryPaths:
         return self.shipyard_dir / "artifacts"
 
     @property
+    def task_records_dir(self) -> Path:
+        return self.shipyard_dir / "task_records"
+
+    @property
+    def failed_tasks_file(self) -> Path:
+        return self.shipyard_dir / "failed_tasks.json"
+
+    @property
     def builder_artifacts_dir(self) -> Path:
         return self.artifacts_dir / "builder"
 
@@ -66,10 +86,14 @@ class RepositoryPaths:
     def verifier_artifacts_dir(self) -> Path:
         return self.artifacts_dir / "verifier"
 
+    def task_record_file(self, task_id: str) -> Path:
+        return self.task_records_dir / f"{task_id}.json"
+
     def ensure_runtime_dirs(self) -> None:
         self.shipyard_dir.mkdir(parents=True, exist_ok=True)
         self.builder_artifacts_dir.mkdir(parents=True, exist_ok=True)
         self.verifier_artifacts_dir.mkdir(parents=True, exist_ok=True)
+        self.task_records_dir.mkdir(parents=True, exist_ok=True)
 
     def relative_to_root(self, path: Path) -> str:
         return path.relative_to(self.root).as_posix()

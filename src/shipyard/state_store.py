@@ -36,6 +36,7 @@ class StateStore:
             phase=Phase.INIT.value,
             current_task_id=None,
             current_task_title=None,
+            current_task_started_at=None,
             builder_attempt=0,
             verifier_attempt=0,
             final_review_attempt=0,
@@ -81,6 +82,14 @@ class StateStore:
 
     def reset(self) -> None:
         self.paths.ensure_runtime_dirs()
+        if self.paths.control_file.exists():
+            self.paths.control_file.unlink()
+        if self.paths.run_pid_file.exists():
+            self.paths.run_pid_file.unlink()
+        if self.paths.active_agent_file.exists():
+            self.paths.active_agent_file.unlink()
+        if self.paths.failed_tasks_file.exists():
+            self.paths.failed_tasks_file.unlink()
         if self.paths.state_file.exists():
             self.paths.state_file.unlink()
         if self.paths.run_log_file.exists():
@@ -95,5 +104,12 @@ class StateStore:
                     path.unlink()
                 elif path.is_dir():
                     path.rmdir()
+        if self.paths.task_records_dir.exists():
+            for path in sorted(self.paths.task_records_dir.rglob("*"), reverse=True):
+                if path.is_file():
+                    path.unlink()
+                elif path.is_dir():
+                    path.rmdir()
         self.paths.builder_artifacts_dir.mkdir(parents=True, exist_ok=True)
         self.paths.verifier_artifacts_dir.mkdir(parents=True, exist_ok=True)
+        self.paths.task_records_dir.mkdir(parents=True, exist_ok=True)

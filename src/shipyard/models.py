@@ -23,6 +23,9 @@ class TaskItem:
     task_id: str
     title: str
     done: bool
+    module_id: str = "module-general"
+    module_title: str = "General"
+    module_dependencies: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -31,6 +34,7 @@ class OrchestratorState:
     phase: str
     current_task_id: str | None
     current_task_title: str | None
+    current_task_started_at: str | None
     builder_attempt: int
     verifier_attempt: int
     final_review_attempt: int
@@ -52,6 +56,7 @@ class OrchestratorState:
             phase=payload["phase"],
             current_task_id=payload.get("current_task_id"),
             current_task_title=payload.get("current_task_title"),
+            current_task_started_at=payload.get("current_task_started_at"),
             builder_attempt=int(payload.get("builder_attempt", 0)),
             verifier_attempt=int(payload.get("verifier_attempt", 0)),
             final_review_attempt=int(payload.get("final_review_attempt", 0)),

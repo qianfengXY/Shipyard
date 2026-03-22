@@ -18,6 +18,7 @@ class AppConfig:
     verifier_adapter: str = "mock_verifier"
     max_builder_retries: int = 3
     max_verifier_retries: int = 3
+    max_parallel_modules: int = 2
     final_review_commands: list[str] = field(default_factory=lambda: ["python -m pytest"])
     claude_command: str = "claude"
     codex_command: str = "codex"
@@ -63,13 +64,14 @@ def load_config(paths: RepositoryPaths) -> AppConfig:
     defaults = default_config()
     payload.setdefault("claude_command", defaults.claude_command)
     payload.setdefault("codex_command", defaults.codex_command)
+    payload.setdefault("max_parallel_modules", defaults.max_parallel_modules)
 
     required_str_fields = ["builder_adapter", "verifier_adapter", "claude_command", "codex_command"]
     for field_name in required_str_fields:
         if not isinstance(payload.get(field_name), str) or not payload[field_name]:
             raise ConfigError(f"Config field '{field_name}' must be a non-empty string.")
 
-    required_int_fields = ["max_builder_retries", "max_verifier_retries"]
+    required_int_fields = ["max_builder_retries", "max_verifier_retries", "max_parallel_modules"]
     for field_name in required_int_fields:
         if not isinstance(payload.get(field_name), int) or payload[field_name] < 1:
             raise ConfigError(f"Config field '{field_name}' must be an integer >= 1.")
@@ -97,6 +99,7 @@ def load_config(paths: RepositoryPaths) -> AppConfig:
         verifier_adapter=payload["verifier_adapter"],
         max_builder_retries=payload["max_builder_retries"],
         max_verifier_retries=payload["max_verifier_retries"],
+        max_parallel_modules=payload["max_parallel_modules"],
         final_review_commands=final_review_commands,
         claude_command=payload["claude_command"],
         codex_command=payload["codex_command"],

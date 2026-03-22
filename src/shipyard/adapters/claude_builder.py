@@ -84,6 +84,8 @@ Repository root: {self.root}
 Current task:
 - task_id: {task_id}
 - title: {task_title}
+- module_id: {docs_context.get("current_task", {}).get("module_id", "module-general")}
+- module_title: {docs_context.get("current_task", {}).get("module_title", "General")}
 
 Requirements:
 - Implement the task in the current repository.

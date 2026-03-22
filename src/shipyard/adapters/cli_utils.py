@@ -343,6 +343,7 @@ def _run_agent_ui_window_command(
         prompt_file = temp_root / "prompt.txt"
         result_file = temp_root / "result.json"
         status_file = temp_root / "status.txt"
+        pid_file = temp_root / "pid.txt"
         config_file = temp_root / "config.json"
         script_file = temp_root / "run.zsh"
 
@@ -364,6 +365,7 @@ def _run_agent_ui_window_command(
                     "prompt_file": str(prompt_file),
                     "status_file": str(status_file),
                     "result_file": str(result_file),
+                    "pid_file": str(pid_file),
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -380,6 +382,12 @@ def _run_agent_ui_window_command(
         if logger:
             logger.stream(source_name, f"{source_name.capitalize()} window opened")
         window_id = _open_terminal_window(script_file)
+        _write_active_agent_metadata(
+            root=cwd,
+            source_name=source_name,
+            window_id=window_id,
+            pid_file=pid_file,
+        )
         try:
             start = time.monotonic()
             summary_logged = False
@@ -416,6 +424,7 @@ def _run_agent_ui_window_command(
                     raise AdapterError(f"{source_name} CLI timed out after {timeout_seconds}s.")
                 time.sleep(1.0)
         finally:
+            _clear_active_agent_metadata(root=cwd, source_name=source_name)
             if window_id is not None:
                 _close_terminal_window(window_id)
 
@@ -606,6 +615,38 @@ def _poll_terminal_output(
 
 def _escape_applescript_string(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _write_active_agent_metadata(
+    *,
+    root: Path,
+    source_name: str,
+    window_id: int | None,
+    pid_file: Path,
+) -> None:
+    active_agent_file = root / ".shipyard" / "active_agent.json"
+    payload = {
+        "source": source_name,
+        "window_id": window_id,
+        "pid_file": str(pid_file),
+    }
+    active_agent_file.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _clear_active_agent_metadata(*, root: Path, source_name: str) -> None:
+    active_agent_file = root / ".shipyard" / "active_agent.json"
+    if not active_agent_file.exists():
+        return
+    try:
+        payload = json.loads(active_agent_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        active_agent_file.unlink()
+        return
+    if payload.get("source") == source_name:
+        active_agent_file.unlink()
 
 
 def _summarize_stream_line(source_name: str, line: str) -> str:

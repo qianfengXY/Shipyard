@@ -10,6 +10,8 @@ import tempfile
 from shipyard.exceptions import TaskParseError
 from shipyard.models import TaskItem
 
+MODULE_PATTERN = re.compile(r"^##\s+(\S+)\s+(.+)$")
+MODULE_DEPENDS_PATTERN = re.compile(r"^depends_on:\s*(.+)$", re.IGNORECASE)
 TASK_PATTERN = re.compile(r"^- \[( |x)\] (\S+) (.+)$")
 
 
@@ -20,16 +22,52 @@ def parse_tasks(tasks_file: Path) -> list[TaskItem]:
     lines = tasks_file.read_text(encoding="utf-8").splitlines()
     tasks: list[TaskItem] = []
     seen_ids: set[str] = set()
+    seen_modules: set[str] = set()
+    current_module_id = "module-general"
+    current_module_title = "General"
+    current_module_dependencies: list[str] = []
 
     for line in lines:
-        match = TASK_PATTERN.match(line.strip())
+        stripped = line.strip()
+        module_match = MODULE_PATTERN.match(stripped)
+        if module_match:
+            current_module_id, current_module_title = module_match.groups()
+            current_module_dependencies = []
+            if current_module_id in seen_modules:
+                raise TaskParseError(f"Duplicate module id found: {current_module_id}")
+            seen_modules.add(current_module_id)
+            continue
+
+        depends_match = MODULE_DEPENDS_PATTERN.match(stripped)
+        if depends_match:
+            raw_dependencies = depends_match.group(1).strip()
+            if raw_dependencies.lower() in {"", "none", "-"}:
+                current_module_dependencies = []
+            else:
+                current_module_dependencies = [
+                    item.strip()
+                    for item in raw_dependencies.split(",")
+                    if item.strip()
+                ]
+            continue
+
+        match = TASK_PATTERN.match(stripped)
         if not match:
             continue
         marker, task_id, title = match.groups()
         if task_id in seen_ids:
             raise TaskParseError(f"Duplicate task id found: {task_id}")
         seen_ids.add(task_id)
-        tasks.append(TaskItem(task_id=task_id, title=title.strip(), done=marker == "x"))
+        tasks.append(
+            TaskItem(
+                task_id=task_id,
+                title=title.strip(),
+                done=marker == "x",
+                module_id=current_module_id,
+                module_title=current_module_title,
+                module_dependencies=list(current_module_dependencies),
+            )
+        )
 
     if not tasks:
         raise TaskParseError("docs/TASKS.md is empty or does not contain valid task items.")
@@ -38,6 +76,14 @@ def parse_tasks(tasks_file: Path) -> list[TaskItem]:
 
 
 def mark_task_done(tasks_file: Path, task_id: str) -> None:
+    _rewrite_task_marker(tasks_file, task_id, target_marker="x")
+
+
+def mark_task_pending(tasks_file: Path, task_id: str) -> None:
+    _rewrite_task_marker(tasks_file, task_id, target_marker=" ")
+
+
+def _rewrite_task_marker(tasks_file: Path, task_id: str, *, target_marker: str) -> None:
     if not tasks_file.exists():
         raise TaskParseError("docs/TASKS.md does not exist.")
 
@@ -51,8 +97,8 @@ def mark_task_done(tasks_file: Path, task_id: str) -> None:
             rewritten.append(line)
             continue
         marker, found_id, title = match.groups()
-        if found_id == task_id and marker == " ":
-            rewritten.append(f"- [x] {found_id} {title}")
+        if found_id == task_id and marker != target_marker:
+            rewritten.append(f"- [{target_marker}] {found_id} {title}")
             updated = True
         else:
             rewritten.append(line)
