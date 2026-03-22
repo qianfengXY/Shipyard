@@ -55,6 +55,7 @@ def test_claude_builder_parses_cli_result(monkeypatch, tmp_path):
     assert result["status"] == "SELF_TEST_PASSED"
     assert result["next_handoff"] == "VERIFIER"
     assert result["files_changed"] == ["src/example.py"]
+    assert result["claimed_acceptance"] == ["task-001"]
 
 
 def test_codex_verifier_parses_output_file(monkeypatch, tmp_path):

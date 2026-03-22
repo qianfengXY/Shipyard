@@ -63,7 +63,8 @@ class ClaudeBuilder:
                 }
                 for item in payload.get("self_test_results", [])
             ],
-            "claimed_acceptance": [str(item) for item in payload.get("claimed_acceptance", [])],
+            # Keep the artifact protocol deterministic: the builder claims only the active task id.
+            "claimed_acceptance": [task_id],
             "next_handoff": "VERIFIER" if status == "SELF_TEST_PASSED" else "BUILDER",
             "generated_at": _now_iso(),
         }
@@ -104,6 +105,9 @@ Builder status rules:
 - SELF_TEST_PASSED: implementation is ready for verification and your self-tests passed.
 - SELF_TEST_FAILED: you attempted the task but your self-tests failed.
 - BLOCKED: you cannot continue because of a missing dependency, credential, or hard blocker.
+
+Field rule:
+- claimed_acceptance must contain exactly one item: the current task_id.
 
 docs_context:
 {json.dumps(docs_context, ensure_ascii=False, indent=2)}
